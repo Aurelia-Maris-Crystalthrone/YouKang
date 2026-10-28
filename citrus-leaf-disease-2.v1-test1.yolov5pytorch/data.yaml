@@ -1,0 +1,13 @@
+train: ../train/images
+val: ../valid/images
+test: ../test/images
+
+nc: 6
+names: ['antracnose', 'canker', 'greasy_spot', 'greening', 'melanose', 'sooty_mold']
+
+roboflow:
+  workspace: 1-eytaw
+  project: citrus-leaf-disease-2
+  version: 1
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/1-eytaw/citrus-leaf-disease-2/dataset/1
