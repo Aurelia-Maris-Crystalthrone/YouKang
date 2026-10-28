@@ -4,7 +4,7 @@
   "pytorch_version": "1.8",
   "model_name": "pomelo_yolo_detect",
   "model_version": "1.0.0",
-  "model_path": "best.pt",
+  "model_path": "best.torchscript",
   "dependencies": {
     "pip": [
       "numpy",

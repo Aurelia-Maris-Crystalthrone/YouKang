@@ -1,49 +1,77 @@
 #!/usr/bin/env bash
-# 模型导出脚本（ModelArts Notebook 内执行，design 接口：export_notebook.sh）
-# 前置：环境准备与训练评估完成，best.pt 已达标（mAP@0.5 ≥ 0.5）
-# 产出：runs/train/pomelo_baseline_v1/weights/best.onnx（输入 shape [1,3,640,640]）
-set -uo pipefail
+# 模型导出脚本（ModelArts Notebook Terminal 直接 bash 执行）
+# 前置：训练评估完成，best.pt 已达标（mAP@0.5 ≥ 0.5）
+# 产出：
+#   runs/train/pomelo_v1/weights/best.torchscript — 部署 ModelArts 在线服务
+#   runs/train/pomelo_v1/weights/best.onnx        — 端侧 converter_lite 转 .ms
+set -euo pipefail
 
-WORK=/home/ma-user/work
-YOLov5_DIR="$WORK/yolov5"
-BEST_PT="runs/train/pomelo_baseline_v1/weights/best.pt"
+WORK_DIR=/home/ma-user/work
+YOLOV5_DIR="$WORK_DIR/yolov5"
+WEIGHTS_DIR="runs/train/pomelo_v1/weights"
+BEST_PT="$WEIGHTS_DIR/best.pt"
+TS_PATH="$WEIGHTS_DIR/best.torchscript"
+ONNX_PATH="$WEIGHTS_DIR/best.onnx"
 
-# 禁止交付未达标权重：导出前确认 best.pt 存在（达标记录按守则检查清单人工核对）
+cd "$YOLOV5_DIR"
+
 if [ ! -f "$BEST_PT" ]; then
-  echo "[导出] 报错：未找到 $BEST_PT"
+  echo "[导出] 未找到 $BEST_PT"
   echo "[导出] 请先完成训练与评估且 mAP@0.5 ≥ 0.5（未达标禁止导出与交付）"
   exit 1
 fi
 
-cd "$YOLov5_DIR" || { echo "[导出] 报错：$YOLov5_DIR 不存在，请先运行 setup_notebook_env.sh"; exit 1; }
+# ---- 步骤 1：导出 TorchScript + ONNX ----
+echo "[1/3] 导出 TorchScript + ONNX"
+echo "  --batch 1 必须带，否则 converter_lite 转 .ms 会失败"
+python export.py --weights "$BEST_PT" \
+  --include torchscript onnx --img 640 --batch 1 \
+  --simplify || { echo "[导出] export.py 失败"; exit 1; }
+echo "[1/3] 导出完成"
 
-# YOLOv5 export.py：--include onnx --img 640 --batch 1（spec 5.3.1-1）
-python export.py --weights "$BEST_PT" --include onnx --img 640 --batch 1
-
-ONNX_PATH="runs/train/pomelo_baseline_v1/weights/best.onnx"
-if [ ! -f "$ONNX_PATH" ]; then
-  echo "[导出] 报错：未生成 $ONNX_PATH，请检查导出日志"
-  exit 1
+# ---- 步骤 2：校验产出文件 ----
+echo "[2/3] 校验产出文件"
+if [ ! -f "$TS_PATH" ]; then
+  echo "[导出] 未生成 $TS_PATH"; exit 1
 fi
+if [ ! -f "$ONNX_PATH" ]; then
+  echo "[导出] 未生成 $ONNX_PATH"; exit 1
+fi
+echo "  TorchScript: $TS_PATH"
+echo "  ONNX:        $ONNX_PATH"
+echo "[2/3] 校验完成"
 
-# 输入 shape 校验：优先用 onnx 库（Notebook 依赖已装）；失败则提示人工 netron.app 校验
+# ---- 步骤 3：校验 ONNX 输入 shape ----
+echo "[3/3] 校验 ONNX 输入 shape（须为 NCHW [1,3,640,640]）"
 python - "$ONNX_PATH" <<'PYEOF'
 import sys
 try:
     import onnx
 except ImportError:
-    print("[导出] 提示：onnx 库不可用，请用 netron.app 人工确认输入 shape 为 [1,3,640,640]")
+    print("[导出] onnx 库不可用，请用 netron.app 人工确认输入 shape 为 [1,3,640,640]")
     sys.exit(0)
 model = onnx.load(sys.argv[1])
 shape = [d.dim_value for d in model.graph.input[0].type.tensor_type.shape.dim]
 if shape != [1, 3, 640, 640]:
-    print(f"[导出] 报错：输入 shape {shape} != [1,3,640,640]，请以 --batch 1 --img 640 重新导出")
+    print(f"[导出] 输入 shape {shape} != [1,3,640,640]，请以 --batch 1 --img 640 重新导出")
     sys.exit(1)
 print(f"[导出] 输入 shape 校验通过: {shape}")
 PYEOF
 if [ $? -ne 0 ]; then
   exit 1
 fi
+echo "[3/3] 校验完成"
 
-echo "[导出] 完成：$ONNX_PATH"
-echo "[导出] 输入节点名一般为 images（netron.app 复核可选）；后续按 export/README_convert.md 执行 converter_lite 转换（本地环境）"
+echo ""
+echo "========================================"
+echo "[导出] 全部完成："
+echo "  $TS_PATH  → 部署 ModelArts 在线服务"
+echo "  $ONNX_PATH → 端侧 converter_lite 转 .ms"
+echo ""
+echo "下一步："
+echo "  1. 部署云端服务：bash package_model.sh"
+echo "  2. 端侧转换（本地 converter_lite 环境）："
+echo "     converter_lite --fmk=ONNX --modelFile=best.onnx \\"
+echo "       --outputFile=yolov5s_pomelo --inputShape=\"images:1,3,640,640\""
+echo "     注意：inputShape 必须是 NCHW（1,3,640,640），端侧已同口径，勿改 NHWC"
+echo "========================================"
