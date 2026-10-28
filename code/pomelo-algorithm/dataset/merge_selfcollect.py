@@ -16,10 +16,18 @@ import shutil
 import sys
 from pathlib import Path
 
+# 类别编号一律取自 labelmap 唯一口径，禁止本文件自行维护（spec DFX 4.4-2）。
+# 历史问题：本文件曾硬编码旧 4 类（含 healthy、缺 greening），
+# 导致自采的 greening 目录被静默跳过、healthy 被当作可检测类合并。
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from labelmap import (  # noqa: E402
+    CLASS_NAMES,
+    is_negative_class,
+    normalize_class_name,
+)
 
-# 类别编号（与 labelmap.py 一致）
-CLASS_NAMES = ("red_spider_mite", "anthracnose", "canker", "healthy")
 CLASS_TO_ID = {name: idx for idx, name in enumerate(CLASS_NAMES)}
+NC = len(CLASS_NAMES)
 
 # 切分比例
 TRAIN_RATIO = 0.8
@@ -73,11 +81,37 @@ def _get_label_file(image_path: Path) -> Path:
 
 
 def _is_healthy(image_path: Path) -> bool:
-    """判断是否为健康叶（空标注文件）。"""
+    """判断该图是否无检测框（空标注 / 无标注文件）。
+
+    注意：healthy 已不是模型类别（见 labelmap 体系说明 1）。
+    本函数语义为"无任何检测框"，自采健康叶与负样本图均返回 True。
+    """
     label_path = _get_label_file(image_path)
     if not label_path.exists():
         return True
     return label_path.stat().st_size == 0
+
+
+def _validate_label_ids(lines: list[str], source: str) -> None:
+    """校验标注行的类别编号在 0..NC-1 内，否则立即中止。
+
+    LabelImg 的 classes.txt 顺序若与 CLASS_NAMES 不一致，
+    会产生编号越界或类别错配（训练时极难排查），必须在合并阶段拦下。
+    """
+    for line_no, line in enumerate(lines, start=1):
+        parts = line.split()
+        if not parts:
+            continue
+        try:
+            cid = int(parts[0])
+        except ValueError:
+            sys.exit(f"[错误] 标注格式非法（首列须为整数类别编号）：{source} 第 {line_no} 行 -> {line!r}")
+        if not (0 <= cid < NC):
+            sys.exit(
+                f"[错误] 类别编号 {cid} 越界（允许 0-{NC - 1}）：{source} 第 {line_no} 行。\n"
+                f"       LabelImg 的 classes.txt 顺序须与 labelmap.CLASS_NAMES 一致：\n"
+                f"       {list(CLASS_NAMES)}"
+            )
 
 
 def _copy_image_and_label(
@@ -85,8 +119,13 @@ def _copy_image_and_label(
     dst_dir: Path,
     split: str,
     new_name: str | None = None,
+    empty_label: bool = False,
 ) -> None:
-    """复制图片和标注文件到目标目录。"""
+    """复制图片和标注文件到目标目录。
+
+    empty_label=True 时强制写入空标注（负样本 / 健康叶），
+    即使源目录存在非空的 .txt 也忽略，避免负样本带框进训练。
+    """
     dst_image_dir = dst_dir / "images" / split
     dst_label_dir = dst_dir / "labels" / split
     dst_image_dir.mkdir(parents=True, exist_ok=True)
@@ -95,17 +134,30 @@ def _copy_image_and_label(
     name = new_name or image_path.stem
     ext = image_path.suffix
 
+    # 目标已存在同名时追加序号，避免 shutil.copy2 静默覆盖导致图片与标签错配
+    if (dst_image_dir / (name + ext)).exists():
+        seq = 1
+        while (dst_image_dir / (f"{name}_{seq}{ext}")).exists():
+            seq += 1
+        name = f"{name}_{seq}"
+
     # 复制图片
     dst_image_path = dst_image_dir / (name + ext)
     shutil.copy2(image_path, dst_image_path)
 
+    if empty_label:
+        # 负样本 / 健康叶：写入空标注，不复用源目录的 .txt
+        (dst_label_dir / (name + ".txt")).write_text("", encoding="utf-8")
+        return
+
     # 复制标注文件
     label_path = _get_label_file(image_path)
     if label_path.exists():
+        _validate_label_ids(_read_label_file(label_path), str(label_path))
         dst_label_path = dst_label_dir / (name + ".txt")
         shutil.copy2(label_path, dst_label_path)
     else:
-        # 健康叶：创建空标注文件
+        # 无标注文件：创建空标注文件
         dst_label_path = dst_label_dir / (name + ".txt")
         dst_label_path.write_text("", encoding="utf-8")
 
@@ -138,12 +190,23 @@ def merge_selfcollect(src_dir: Path, dst_dir: Path) -> dict:
         "per_split": {"train": 0, "val": 0, "test": 0},
     }
 
-    # 遍历每个类别目录
-    for class_name in CLASS_NAMES:
-        class_dir = src_dir / class_name
-        if not class_dir.exists():
-            print(f"[警告] 类别目录不存在：{class_dir}")
+    # 遍历源目录：检测类子目录 + 负样本子目录（ healthy 等不占类别编号）
+    for entry in sorted(src_dir.iterdir()):
+        if not entry.is_dir():
             continue
+
+        class_id = normalize_class_name(entry.name)
+        if class_id is not None:
+            class_name = CLASS_NAMES[class_id]
+            is_negative = False
+        elif is_negative_class(entry.name):
+            class_name = entry.name
+            is_negative = True
+        else:
+            print(f"[警告] 未知类别目录，已跳过：{entry}")
+            continue
+
+        class_dir = entry
 
         # 获取图片文件
         image_files = _get_image_files(class_dir)
@@ -161,18 +224,30 @@ def merge_selfcollect(src_dir: Path, dst_dir: Path) -> dict:
             "train": len(splits["train"]),
             "val": len(splits["val"]),
             "test": len(splits["test"]),
+            "is_negative": is_negative,
         }
         stats["total_images"] += total
+
+        # 负样本文件统一 neg_ 前缀，与 prepare_dataset.py 口径一致
+        prefix = "neg" if is_negative else class_name
 
         # 复制文件
         for split_name, indices in splits.items():
             for idx in indices:
                 image_path = image_files[idx]
-                new_name = f"{class_name}_{image_path.stem}"
-                _copy_image_and_label(image_path, dst_dir, split_name, new_name)
+                # 文件名已带前缀时不重复添加（避免 canker_canker_xxx）；
+                # 未带则必须加上：各分类目录常出现同名文件（IMG_0001 等），
+                # 去掉类别前缀会导致跨类别覆盖，图片与标签错配
+                stem = image_path.stem
+                new_name = stem if stem.startswith(f"{prefix}_") else f"{prefix}_{stem}"
+                _copy_image_and_label(
+                    image_path, dst_dir, split_name, new_name,
+                    empty_label=is_negative,
+                )
                 stats["per_split"][split_name] += 1
 
-        print(f"[合并] {class_name}: {total} 张（train={len(splits['train'])}, val={len(splits['val'])}, test={len(splits['test'])}）")
+        kind = "负样本" if is_negative else "检测类"
+        print(f"[合并] {class_name}（{kind}）: {total} 张（train={len(splits['train'])}, val={len(splits['val'])}, test={len(splits['test'])}）")
 
     # 更新 citrus.yaml
     _update_citrus_yaml(dst_dir)

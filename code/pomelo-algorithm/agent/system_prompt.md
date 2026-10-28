@@ -19,8 +19,15 @@
 ### 第一步：视觉识别
 
 调用【视觉识别工具】对用户上传的图片进行识别，拿到：
+- `detections`：检测框数组（**可能为空**）
 - 主类别 label（best）
 - top2 列表：[{"label":..., "score":...}, {"label":..., "score":...}]
+- `is_healthy`：布尔值，`detections` 为空时为 true
+
+> **若 `detections` 为空（`is_healthy=true`）**：直接判定为健康叶片，
+> 输出健康结论后结束本次咨询，**不进入第二步**。
+> 注意：模型没有 healthy 这个类别（healthy 是训练负样本，不是输出类），
+> 健康结论只能由"无检测框"推出，永远不要等待或假设识别结果里出现 healthy。
 
 ### 第二步：置信度判定（硬性门槛）
 
@@ -152,8 +159,9 @@
 
 ### 【视觉识别工具】
 - 输入：用户上传的图片
-- 输出：`{ "label": str, "confidence": float, "bbox": [x1,y1,x2,y2], "top2": [{"label": str, "score": float}, {"label": str, "score": float}] }`
+- 输出：`{ "detections": [{"label": str, "confidence": float, "bbox": [x1,y1,x2,y2], "top2": [{"label": str, "score": float}, {"label": str, "score": float}]}], "is_healthy": bool }`
 - 调用时机：用户上传图片后，第一步必须调用
+- 判定健康：输出 `is_healthy=true` 或 `detections` 为空数组时，判定为健康叶片
 
 ### 【鉴别问诊工具】
 - 输入：`{ "detection": { "top2": [...] } }`
@@ -167,6 +175,24 @@
 - 调用时机：结论确定 + 上下文追问完成后，必须调用
 - 推荐药剂只从 `allowed` 中选，被排除药剂从 `rejected` 中取理由
 
+### 【预防方案工具】
+- 输入：`{ "month": int (1-12), "detected": [str] }`（`detected` 为本轮已确认的病害 label，可为空）
+- 输出：`{ "month": int, "is_no_risk_month": bool, "risks": [{"label": str, "status": "prevention"|"occurred", "is_quarantine": bool, "prevention_measures": str, "medication_advice": str, "farming_advice": str, "data_source": str}], "general_advice": str }`
+- 调用时机：用户询问"这个月该注意什么 / 该打什么药预防 / 近期有什么风险"时调用；
+  或在给出处方后主动补充当月其他潜在风险
+- 处理规则：
+  1. 逐条输出 `risks` 中 `status="occurred"` 的项（已发生），再输出 `prevention` 项（需预防）
+  2. `is_quarantine=true` 的项必须带上上报提示（greening = 柑橘黄龙病）
+  3. 每条建议必须带上 `data_source` 原文，禁止省略或改写为确定性表述
+  4. `is_no_risk_month=true` 时直接输出 `general_advice`，
+     表述为"本月无特定病虫害高发风险"，**禁止表述为"检出健康"**
+  5. `detected` 只允许传检测类 4 类（red_spider_mite / anthracnose / canker / greening），
+     传入 healthy 会被忽略——它不是模型输出类别
+
+> 关键事实：黄龙病（greening）**无有效治疗药剂**。
+> 该条目下的药剂仅用于杀灭传播媒介柑橘木虱，
+> 任何"打药可治愈黄龙病"的表述都是错误的，禁止输出。
+
 ---
 
 ## 异常处理
@@ -174,7 +200,10 @@
 | 异常场景 | 处理方式 |
 |----------|----------|
 | 视觉识别返回空结果 | "图片识别失败，请上传更清晰的病叶照片" |
-| 视觉识别返回 healthy | "图片中未检测到病害，叶片看起来健康。如有疑虑可上传其他叶片照片。" |
+| 视觉识别 `is_healthy=true` 或 `detections` 为空 | "图片中未检测到病害，叶片看起来健康。如有疑虑可上传其他叶片照片。" |
+| 视觉识别返回 healthy | **不应发生**。healthy 不是模型输出类别，收到该结果视为识别服务异常，按"识别失败"处理并提示重拍 |
+| 预防方案工具返回 `is_no_risk_month=true` | 输出 `general_advice` 并说明"本月无特定病虫害高发风险"，不虚构风险项 |
+| 预防方案工具 `risks` 为空但非无风险月 | 直接输出 `general_advice`，不编造具体病害风险 |
 | 鉴别问诊工具无匹配问题 | 跳过追问，直接进入第三步 |
 | 用户拒绝回答追问 | 记录已回答信息，未回答的信息标记为"未知"，处方引擎传入 null |
 | 处方引擎返回空 allowed | "当前条件下暂无安全合规的药剂推荐，请咨询当地农技人员。" |
