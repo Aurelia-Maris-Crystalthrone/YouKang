@@ -180,8 +180,10 @@ def validate_output(text: str, allowed_pesticide_names: list[str]) -> dict:
     # 长汉字串里可能藏着药名，例如"加多菌灵混喷效果更好"整体不像药名，
     # 但其中的"加多菌灵"以农药后缀结尾，必须单独检出。
     # 护栏宁可误报也不漏报：漏报意味着未登记农药被推荐出去（违法风险）。
+    # 前缀窗口固定 1-3 字：中文药名多为 2-4 字，窗口过宽会把前导虚词
+    # 吞进候选（"或某未知神药"），导致替换时误伤上下文且漏掉精确药名。
     suffix_alt = "|".join(sorted(PESTICIDE_SUFFIXES, key=len, reverse=True))
-    suffix_pattern = re.compile(r'[\u4e00-\u9fff]{1,6}(' + suffix_alt + r')')
+    suffix_pattern = re.compile(r'[\u4e00-\u9fff]{1,3}(' + suffix_alt + r')')
     for match in suffix_pattern.finditer(masked):
         seg = match.group()
         if seg in NON_PESTICIDE_WORDS:
@@ -212,7 +214,8 @@ def validate_output(text: str, allowed_pesticide_names: list[str]) -> dict:
             continue
         detected.append(candidate)
 
-    # 去重
+    # 去重（保留原顺序）。不做子串剔除：短候选往往是被切出的片段
+    # （如"一个假药"来自"另一个假药"），剔掉会导致替换残留。
     detected = list(dict.fromkeys(detected))
 
     # 找出白名单外的药名
@@ -227,9 +230,9 @@ def validate_output(text: str, allowed_pesticide_names: list[str]) -> dict:
             "suggested_text": text,
         }
 
-    # 替换违规药名
+    # 替换违规药名：长的先替换，避免短片段先被替换后残留长串碎片
     suggested = text
-    for v in violations:
+    for v in sorted(violations, key=len, reverse=True):
         suggested = suggested.replace(v, "请咨询当地农技人员")
 
     return {
