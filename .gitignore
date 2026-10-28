@@ -1,0 +1,60 @@
+# ---------- 凭据与密钥（绝不入库） ----------
+.env
+.env.*
+*.pem
+*.key
+*secret*
+*credential*
+**/mcp_settings.json
+
+# ---------- 模型权重与产物（体积大，用 OBS/制品库托管） ----------
+*.pt
+*.pth
+*.onnx
+*.ms
+*.torchscript
+*.ts
+*.engine
+runs/
+
+# ---------- 内部文档（含缺陷诊断 / 进度排期，禁止公开） ----------
+项目评审_缺陷诊断与差异化升级方案.md
+CodeArts指令集_v2.md
+CodeArts算法指令手册.md
+每日任务排期.md
+柚子病虫害AI识别_行动指南.md
+鸿蒙APP开发指南.md
+内部文档/
+.merkle-snapshot.json
+
+# ---------- Python ----------
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+*.egg-info/
+
+# ---------- 鸿蒙 / DevEco ----------
+oh_modules/
+node_modules/
+.hvigor/
+.cxx/
+build/
+*/build/
+oh-package-lock.json5
+local.properties
+.clangd
+.clang-format
+
+# ---------- IDE / 系统 ----------
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# ---------- CodeArts 本地索引（体积大且含绝对路径） ----------
+.codeartsdoer/.codebase/
+.codeartsdoer/temp/
+.codeartsdoer/.codebase/file-index.db

@@ -1,0 +1,74 @@
+{
+  "model_type": "PyTorch",
+  "runtime": "python3.7",
+  "pytorch_version": "1.8",
+  "model_name": "pomelo_yolo_detect",
+  "model_version": "1.0.0",
+  "model_path": "best.pt",
+  "dependencies": {
+    "pip": [
+      "numpy",
+      "opencv-python-headless",
+      "pillow"
+    ]
+  },
+  "apis": [
+    {
+      "protocol": "http",
+      "url": "/",
+      "method": "post",
+      "request": {
+        "Content-Type": "multipart/form-data",
+        "data": {
+          "type": "object",
+          "properties": {
+            "images": {
+              "type": "file"
+            }
+          }
+        }
+      },
+      "response": {
+        "Content-Type": "application/json",
+        "data": {
+          "type": "object",
+          "properties": {
+            "detections": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "label": {
+                    "type": "string",
+                    "enum": [
+                      "red_spider_mite",
+                      "anthracnose",
+                      "canker",
+                      "greening"
+                    ]
+                  },
+                  "confidence": {
+                    "type": "number"
+                  },
+                  "bbox": {
+                    "type": "array",
+                    "items": {
+                      "type": "number"
+                    },
+                    "description": "原图像素坐标 [x1,y1,x2,y2]，x1<x2 且 y1<y2"
+                  }
+                }
+              }
+            },
+            "error_code": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  ]
+}
