@@ -27,6 +27,11 @@ CodeArts算法指令手册.md
 内部文档/
 .merkle-snapshot.json
 
+# ---------- 推送/运行日志（临时产物） ----------
+*.log
+push_*.sh
+sync_push.sh
+
 # ---------- Python ----------
 __pycache__/
 *.py[cod]
