@@ -1,0 +1,447 @@
+{
+  "pairs": [
+    {
+      "pair": [
+        "canker",
+        "anthracnose"
+      ],
+      "distinguishing_features": [
+        "病斑形态：溃疡病斑隆起、木栓化；炭疽病斑平塌、下陷",
+        "黄晕：溃疡病斑周围有明显黄晕；炭疽病斑无黄晕",
+        "轮纹小黑点：炭疽病斑上有同心轮纹排列的小黑点；溃疡病斑无"
+      ],
+      "questions": [
+        {
+          "key": "morphology",
+          "question": "病斑摸起来是隆起凸出来的，还是平塌陷下去的？",
+          "answers": [
+            {
+              "key": "raised",
+              "label": "隆起凸出",
+              "likelihood": {
+                "canker": 0.85,
+                "anthracnose": 0.10
+              }
+            },
+            {
+              "key": "flat",
+              "label": "平塌下陷",
+              "likelihood": {
+                "canker": 0.15,
+                "anthracnose": 0.80
+              }
+            }
+          ]
+        },
+        {
+          "key": "yellow_halo",
+          "question": "病斑周围有没有一圈黄色的晕圈？",
+          "answers": [
+            {
+              "key": "yes",
+              "label": "有黄色晕圈",
+              "likelihood": {
+                "canker": 0.80,
+                "anthracnose": 0.15
+              }
+            },
+            {
+              "key": "no",
+              "label": "没有黄色晕圈",
+              "likelihood": {
+                "canker": 0.20,
+                "anthracnose": 0.70
+              }
+            }
+          ]
+        },
+        {
+          "key": "black_dots",
+          "question": "病斑上有没有一圈一圈排列的小黑点？",
+          "answers": [
+            {
+              "key": "yes",
+              "label": "有同心轮纹小黑点",
+              "likelihood": {
+                "canker": 0.10,
+                "anthracnose": 0.90
+              }
+            },
+            {
+              "key": "no",
+              "label": "没有小黑点",
+              "likelihood": {
+                "canker": 0.70,
+                "anthracnose": 0.25
+              }
+            }
+          ]
+        }
+      ],
+      "source": "《柑橘病虫害防治手册》第二章 溃疡病 vs 炭疽病鉴别要点"
+    },
+    {
+      "pair": [
+        "canker",
+        "scab"
+      ],
+      "distinguishing_features": [
+        "穿透性：疮痂病斑穿透叶背；溃疡病斑不穿透",
+        "叶片形态：疮痂病导致叶片扭曲变形；溃疡病不扭曲",
+        "病斑颜色：疮痂病斑黄褐色、木栓化；溃疡病斑黄褐色、中央裂开"
+      ],
+      "questions": [
+        {
+          "key": "penetration",
+          "question": "翻开叶子看背面，病斑是不是穿透到背面了？",
+          "answers": [
+            {
+              "key": "yes",
+              "label": "穿透到叶背",
+              "likelihood": {
+                "canker": 0.15,
+                "scab": 0.85
+              }
+            },
+            {
+              "key": "no",
+              "label": "只在正面",
+              "likelihood": {
+                "canker": 0.80,
+                "scab": 0.20
+              }
+            }
+          ]
+        },
+        {
+          "key": "leaf_deform",
+          "question": "叶片有没有扭曲变形、皱缩？",
+          "answers": [
+            {
+              "key": "yes",
+              "label": "叶片扭曲变形",
+              "likelihood": {
+                "canker": 0.10,
+                "scab": 0.90
+              }
+            },
+            {
+              "key": "no",
+              "label": "叶片正常",
+              "likelihood": {
+                "canker": 0.85,
+                "scab": 0.15
+              }
+            }
+          ]
+        }
+      ],
+      "source": "《柑橘病虫害防治手册》第二章 溃疡病 vs 疮痂病鉴别要点"
+    },
+    {
+      "pair": [
+        "greening",
+        "deficiency"
+      ],
+      "distinguishing_features": [
+        "黄化模式：黄龙病是斑驳黄化（不均匀）；缺素是均匀黄化",
+        "发病部位：黄龙病新叶先黄；缺素老叶先黄",
+        "发病范围：黄龙病整株发病、半边黄；缺素全园均匀发病"
+      ],
+      "questions": [
+        {
+          "key": "yellow_pattern",
+          "question": "黄化是整片叶子均匀发黄，还是像斑点一样一块黄一块绿？",
+          "answers": [
+            {
+              "key": "mottled",
+              "label": "斑驳不均匀",
+              "likelihood": {
+                "greening": 0.90,
+                "deficiency": 0.10
+              }
+            },
+            {
+              "key": "uniform",
+              "label": "均匀发黄",
+              "likelihood": {
+                "greening": 0.15,
+                "deficiency": 0.85
+              }
+            }
+          ]
+        },
+        {
+          "key": "leaf_age",
+          "question": "是新长出来的叶子先黄，还是老叶子先黄？",
+          "answers": [
+            {
+              "key": "new",
+              "label": "新叶先黄",
+              "likelihood": {
+                "greening": 0.85,
+                "deficiency": 0.15
+              }
+            },
+            {
+              "key": "old",
+              "label": "老叶先黄",
+              "likelihood": {
+                "greening": 0.10,
+                "deficiency": 0.80
+              }
+            }
+          ]
+        },
+        {
+          "key": "tree_pattern",
+          "question": "是一整棵树都黄了，还是半边黄半边绿？或者全园都黄？",
+          "answers": [
+            {
+              "key": "half",
+              "label": "半边黄半边绿",
+              "likelihood": {
+                "greening": 0.90,
+                "deficiency": 0.05
+              }
+            },
+            {
+              "key": "whole_tree",
+              "label": "整棵树都黄",
+              "likelihood": {
+                "greening": 0.75,
+                "deficiency": 0.20
+              }
+            },
+            {
+              "key": "whole_orchard",
+              "label": "全园都黄",
+              "likelihood": {
+                "greening": 0.10,
+                "deficiency": 0.85
+              }
+            }
+          ]
+        }
+      ],
+      "source": "《柑橘黄龙病防治手册》第二章 黄龙病 vs 缺素症鉴别要点"
+    },
+    {
+      "pair": [
+        "red_spider_mite",
+        "healthy"
+      ],
+      "distinguishing_features": [
+        "虫体：红蜘蛛叶背有红色小虫；健康叶无",
+        "蛛丝：红蜘蛛危害有蛛丝；健康叶无",
+        "叶面斑点：红蜘蛛危害有针尖大灰白点；健康叶无"
+      ],
+      "questions": [
+        {
+          "key": "mites",
+          "question": "翻开叶子背面看，有没有红色或暗红色的小虫子在爬？",
+          "answers": [
+            {
+              "key": "yes",
+              "label": "有红色小虫",
+              "likelihood": {
+                "red_spider_mite": 0.95,
+                "healthy": 0.02
+              }
+            },
+            {
+              "key": "no",
+              "label": "没有红色小虫",
+              "likelihood": {
+                "red_spider_mite": 0.20,
+                "healthy": 0.80
+              }
+            }
+          ]
+        },
+        {
+          "key": "webbing",
+          "question": "叶背有没有细细的蛛丝？",
+          "answers": [
+            {
+              "key": "yes",
+              "label": "有蛛丝",
+              "likelihood": {
+                "red_spider_mite": 0.90,
+                "healthy": 0.02
+              }
+            },
+            {
+              "key": "no",
+              "label": "没有蛛丝",
+              "likelihood": {
+                "red_spider_mite": 0.25,
+                "healthy": 0.85
+              }
+            }
+          ]
+        },
+        {
+          "key": "speckles",
+          "question": "叶面有没有针尖大小的灰白色或黄白色小点？",
+          "answers": [
+            {
+              "key": "yes",
+              "label": "有灰白小点",
+              "likelihood": {
+                "red_spider_mite": 0.90,
+                "healthy": 0.05
+              }
+            },
+            {
+              "key": "no",
+              "label": "没有灰白小点",
+              "likelihood": {
+                "red_spider_mite": 0.30,
+                "healthy": 0.85
+              }
+            }
+          ]
+        }
+      ],
+      "source": "《柑橘病虫害防治手册》第二章 红蜘蛛危害症状识别"
+    },
+    {
+      "pair": [
+        "anthracnose",
+        "greasy_spot"
+      ],
+      "distinguishing_features": [
+        "轮纹小黑点：炭疽病有同心轮纹小黑点；脂点黄斑病无",
+        "病斑形状：炭疽病斑不规则；脂点黄斑病斑圆形或椭圆形",
+        "黄晕：炭疽病斑周围有黄晕；脂点黄斑病无"
+      ],
+      "questions": [
+        {
+          "key": "black_dots",
+          "question": "病斑上有没有一圈一圈排列的小黑点？",
+          "answers": [
+            {
+              "key": "yes",
+              "label": "有同心轮纹小黑点",
+              "likelihood": {
+                "anthracnose": 0.90,
+                "greasy_spot": 0.05
+              }
+            },
+            {
+              "key": "no",
+              "label": "没有小黑点",
+              "likelihood": {
+                "anthracnose": 0.25,
+                "greasy_spot": 0.70
+              }
+            }
+          ]
+        },
+        {
+          "key": "shape",
+          "question": "病斑形状是圆圆的椭圆的，还是不规则的？",
+          "answers": [
+            {
+              "key": "round",
+              "label": "圆形或椭圆形",
+              "likelihood": {
+                "anthracnose": 0.15,
+                "greasy_spot": 0.85
+              }
+            },
+            {
+              "key": "irregular",
+              "label": "不规则形状",
+              "likelihood": {
+                "anthracnose": 0.85,
+                "greasy_spot": 0.15
+              }
+            }
+          ]
+        },
+        {
+          "key": "yellow_halo",
+          "question": "病斑周围有没有一圈黄色的晕圈？",
+          "answers": [
+            {
+              "key": "yes",
+              "label": "有黄色晕圈",
+              "likelihood": {
+                "anthracnose": 0.80,
+                "greasy_spot": 0.15
+              }
+            },
+            {
+              "key": "no",
+              "label": "没有黄色晕圈",
+              "likelihood": {
+                "anthracnose": 0.25,
+                "greasy_spot": 0.70
+              }
+            }
+          ]
+        }
+      ],
+      "source": "《柑橘病虫害防治手册》第二章 炭疽病 vs 脂点黄斑病鉴别要点"
+    },
+    {
+      "pair": [
+        "canker",
+        "healthy"
+      ],
+      "distinguishing_features": [
+        "病斑：溃疡病有木栓化隆起病斑；健康叶无",
+        "黄晕：溃疡病病斑周围有黄晕；健康叶无"
+      ],
+      "questions": [
+        {
+          "key": "lesion",
+          "question": "叶面有没有凸出来的褐色病斑，像火山口一样？",
+          "answers": [
+            {
+              "key": "yes",
+              "label": "有凸出病斑",
+              "likelihood": {
+                "canker": 0.95,
+                "healthy": 0.02
+              }
+            },
+            {
+              "key": "no",
+              "label": "没有病斑",
+              "likelihood": {
+                "canker": 0.10,
+                "healthy": 0.95
+              }
+            }
+          ]
+        },
+        {
+          "key": "yellow_halo",
+          "question": "病斑周围有没有一圈黄色的晕圈？",
+          "answers": [
+            {
+              "key": "yes",
+              "label": "有黄色晕圈",
+              "likelihood": {
+                "canker": 0.85,
+                "healthy": 0.05
+              }
+            },
+            {
+              "key": "no",
+              "label": "没有黄色晕圈",
+              "likelihood": {
+                "canker": 0.30,
+                "healthy": 0.85
+              }
+            }
+          ]
+        }
+      ],
+      "source": "《柑橘病虫害防治手册》第二章 溃疡病症状识别"
+    }
+  ]
+}
