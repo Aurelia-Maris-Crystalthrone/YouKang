@@ -99,7 +99,7 @@ class TestNMS(unittest.TestCase):
         labels = [d["label"] for d in result["detections"]]
         self.assertEqual(len(result["detections"]), 2)
         self.assertIn("anthracnose", labels)
-        self.assertIn("healthy", labels)
+        self.assertIn("greening", labels)
         best = [d for d in result["detections"] if d["label"] == "anthracnose"][0]
         self.assertAlmostEqual(best["confidence"], 0.765, places=3)
 

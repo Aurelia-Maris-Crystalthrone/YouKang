@@ -56,5 +56,6 @@ Thumbs.db
 
 # ---------- CodeArts 本地索引（体积大且含绝对路径） ----------
 .codeartsdoer/.codebase/
+.arts/
 .codeartsdoer/temp/
 .codeartsdoer/.codebase/file-index.db
