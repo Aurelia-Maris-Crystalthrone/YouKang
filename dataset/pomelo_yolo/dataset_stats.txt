@@ -1,0 +1,13 @@
+统计报告（build_dataset.py 生成）
+class                      train     val    test   total
+red_spider_mite              200      43      43     286
+anthracnose                  650      88      86     824
+canker                       748     125     132    1005
+greening                    1791     247     244    2282
+__negative__                2081     447     442    2970
+TOTAL                       5470     950     947    7367
+
+说明：
+  · __negative__ = 健康叶与易误判非目标类（空标注），推理时'无检测框'即判为健康
+  · red_spider_mite 为整图伪框：红蜘蛛虫体约 0.5mm，640×640 输入不可见，检测目标为'全叶受害症状'（有农学依据）
+  · Roboflow 切分: train=2496 val=312 test=312
