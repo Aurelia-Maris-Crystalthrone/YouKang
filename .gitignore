@@ -72,3 +72,8 @@ push_data_batches.sh
 push_remaining.sh
 push_small_batches.sh
 push_all_remaining.sh
+
+# ---------- Token 用量日志（运行产物，含调用统计） ----------
+agent/token_usage.jsonl
+*.jsonl
+eval_*.json
