@@ -26,7 +26,21 @@ pomelo-algorithm/
 ├── postprocess/
 │   ├── yolo_postprocess.py       # 端侧后处理参考实现（纯 numpy NMS，自包含）
 │   └── README.md                 # 交付与端云对拍说明
-└── tests/                        # 单元/功能测试（本地 Python 3.12.7 可直接运行）
+├── agent/                        # 智能体主链路（唯一对外入口）
+│   ├── orchestrator.py           # 主编排：诊断→问诊→处方→文案→护栏（已完成）
+│   ├── demo_offline.py           # 一键离线演示（已完成；--with-api 待接真实 API）
+│   ├── vision_client.py          # 华为云 MaaS 多模态客户端
+│   ├── vision_prompt.py          # 多模态诊断系统提示词
+│   ├── discriminate.py           # 病害鉴别判断（低置信追问 + 贝叶斯后验）
+│   ├── questions.json            # 鉴别问题库
+│   └── README.md                 # 鉴别判断对接说明 + 智能体主链路
+├── prescription/                 # 处方规则引擎（本地）
+│   ├── rule_engine.py            # 安全间隔期/抗药性/复配禁忌过滤
+│   ├── load_from_db.py           # RDS 行 → dataclass 适配层（已完成）
+│   ├── guardrail.py              # 出口药名白名单护栏（最后一道闸）
+│   └── schema.sql                # 处方数据库表结构
+├── expert_knowledge.py           # 专家知识库（月份-病虫害-防治建议）
+└── tests/                        # 单元/功能测试（含离线端到端冒烟 test_e2e_offline.py）
 ```
 
 ## 类别映射表（唯一口径，交付工程与产品）
